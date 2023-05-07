@@ -5,6 +5,7 @@ import numpy as np
 import pickle
 import torch
 import tqdm
+from iopath.common.file_io import g_pathmgr
 
 import slowfast.datasets.utils as data_utils
 import slowfast.utils.checkpoint as cu
@@ -14,7 +15,6 @@ import slowfast.utils.misc as misc
 import slowfast.visualization.tensorboard_vis as tb
 from slowfast.datasets import loader
 from slowfast.models import build_model
-from slowfast.utils.env import pathmgr
 from slowfast.visualization.gradcam_utils import GradCAM
 from slowfast.visualization.prediction_vis import WrongPredictionVis
 from slowfast.visualization.utils import (
@@ -296,7 +296,9 @@ def visualize(cfg):
                 "Visualizing class-level performance from saved results..."
             )
             if writer is not None:
-                with pathmgr.open(cfg.TENSORBOARD.PREDICTIONS_PATH, "rb") as f:
+                with g_pathmgr.open(
+                    cfg.TENSORBOARD.PREDICTIONS_PATH, "rb"
+                ) as f:
                     preds, labels = pickle.load(f, encoding="latin1")
 
                 writer.plot_eval(preds, labels)

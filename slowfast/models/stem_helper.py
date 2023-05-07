@@ -3,7 +3,6 @@
 
 """ResNe(X)t 3D stem helper."""
 
-import torch
 import torch.nn as nn
 
 
@@ -78,14 +77,7 @@ class VideoModelStem(nn.Module):
                 }
             )
             == 1
-        ), "Input pathway dimensions are not consistent. {} {} {} {} {}".format(
-            len(dim_in),
-            len(dim_out),
-            len(kernel),
-            len(stride),
-            len(padding),
-        )
-
+        ), "Input pathway dimensions are not consistent."
         self.num_pathways = len(dim_in)
         self.kernel = kernel
         self.stride = stride
@@ -117,12 +109,10 @@ class VideoModelStem(nn.Module):
         assert (
             len(x) == self.num_pathways
         ), "Input tensor does not contain {} pathway".format(self.num_pathways)
-        # use a new list, don't modify in-place the x list, which is bad for activation checkpointing.
-        y = []
         for pathway in range(len(x)):
             m = getattr(self, "pathway{}_stem".format(pathway))
-            y.append(m(x[pathway]))
-        return y
+            x[pathway] = m(x[pathway])
+        return x
 
 
 class ResNetBasicStem(nn.Module):
@@ -288,38 +278,3 @@ class X3DStem(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         return x
-
-
-class PatchEmbed(nn.Module):
-    """
-    PatchEmbed.
-    """
-
-    def __init__(
-        self,
-        dim_in=3,
-        dim_out=768,
-        kernel=(1, 16, 16),
-        stride=(1, 4, 4),
-        padding=(1, 7, 7),
-        conv_2d=False,
-    ):
-        super().__init__()
-        if conv_2d:
-            conv = nn.Conv2d
-        else:
-            conv = nn.Conv3d
-        self.proj = conv(
-            dim_in,
-            dim_out,
-            kernel_size=kernel,
-            stride=stride,
-            padding=padding,
-        )
-
-    def forward(self, x, keep_spatial=False):
-        x = self.proj(x)
-        if keep_spatial:
-            return x, x.shape
-        # B C (T) H W -> B (T)HW C
-        return x.flatten(2).transpose(1, 2), x.shape

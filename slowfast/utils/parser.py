@@ -48,23 +48,55 @@ def parse_args():
     )
     parser.add_argument(
         "--cfg",
-        dest="cfg_files",
-        help="Path to the config files",
-        default=["configs/Kinetics/SLOWFAST_4x16_R50.yaml"],
-        nargs="+",
+        dest="cfg_file",
+        help="Path to the config file",
+        default="config_files/SLOWFAST_8x8_R50.yaml",
+        type=str,
     )
     parser.add_argument(
-        "--opts",
+        "opts",
         help="See slowfast/config/defaults.py for all options",
         default=None,
         nargs=argparse.REMAINDER,
     )
-    if len(sys.argv) == 1:
-        parser.print_help()
+    parser.add_argument(
+        "--database",
+        help="database name",
+        default="KoNViD-1k",
+        type=str,
+    )
+    parser.add_argument(
+        "--frame_batch_size",
+        help="frame batch size for feature extraction (default: 8)",
+        default="8",
+        type=int,
+    )
+    parser.add_argument(
+        '--model_path',
+        default='models/model_C',
+        type=str,
+        help='model path (default: models/model)'
+    )
+    parser.add_argument(
+        '--trained_datasets',
+        nargs='+',
+        type=str,
+        default=['C'],
+        help='C K L N Y Q'
+    )
+    parser.add_argument(
+        '--video_path',
+        default='data/test.mp4',
+        type=str,
+        help='video path (default: data/test.mp4)'
+    )
+
+    # if len(sys.argv) == 1:
+    #     parser.print_help()
     return parser.parse_args()
 
 
-def load_config(args, path_to_config=None):
+def load_config(args, cfg_path=None):
     """
     Given the arguemnts, load and initialize the configs.
     Args:
@@ -74,8 +106,10 @@ def load_config(args, path_to_config=None):
     # Setup cfg.
     cfg = get_cfg()
     # Load config from cfg.
-    if path_to_config is not None:
-        cfg.merge_from_file(path_to_config)
+    if cfg_path is not None:
+        cfg.merge_from_file(cfg_path)
+    elif args.cfg_file is not None:
+        cfg.merge_from_file(args.cfg_file)
     # Load config from command line, overwrite config from opts.
     if args.opts is not None:
         cfg.merge_from_list(args.opts)

@@ -11,9 +11,9 @@ import logging
 import os
 import sys
 import simplejson
+from iopath.common.file_io import g_pathmgr
 
 import slowfast.utils.distributed as du
-from slowfast.utils.env import pathmgr
 
 
 def _suppress_print():
@@ -29,10 +29,7 @@ def _suppress_print():
 
 @functools.lru_cache(maxsize=None)
 def _cached_log_stream(filename):
-    # Use 1K buffer if writing to cloud storage.
-    io = pathmgr.open(
-        filename, "a", buffering=1024 if "://" in filename else -1
-    )
+    io = g_pathmgr.open(filename, "a", buffering=1024)
     atexit.register(io.close)
     return io
 
@@ -56,7 +53,7 @@ def setup_logging(output_dir=None):
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
     plain_formatter = logging.Formatter(
-        "[%(asctime)s][%(levelname)s] %(filename)s: %(lineno)4d: %(message)s",
+        "[%(asctime)s][%(levelname)s] %(filename)s: %(lineno)3d: %(message)s",
         datefmt="%m/%d %H:%M:%S",
     )
 
@@ -84,7 +81,7 @@ def get_logger(name):
     return logging.getLogger(name)
 
 
-def log_json_stats(stats, output_dir=None):
+def log_json_stats(stats):
     """
     Logs json stats.
     Args:
@@ -97,14 +94,3 @@ def log_json_stats(stats, output_dir=None):
     json_stats = simplejson.dumps(stats, sort_keys=True, use_decimal=True)
     logger = get_logger(__name__)
     logger.info("json_stats: {:s}".format(json_stats))
-    if du.is_master_proc(du.get_world_size()) and output_dir:
-        filename = os.path.join(output_dir, "json_stats.log")
-        try:
-            with pathmgr.open(
-                filename, "a", buffering=1024 if "://" in filename else -1
-            ) as f:
-                f.write("json_stats: {:s}\n".format(json_stats))
-        except Exception:
-            logger.info(
-                "Failed to write to json_stats.log: {}".format(json_stats)
-            )
